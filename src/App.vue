@@ -1,6 +1,6 @@
 <template>
   <v-app>
-<!--    <router-view name="bluetoothConnect" @select="checkDevice"></router-view>-->
+    <router-view name="bluetoothConnect" @select="checkDevice"></router-view>
 <!--    <router-view name="login" @login="login"></router-view>-->
     <v-content id="main">
       <transition name="page">
@@ -55,6 +55,15 @@
           // } else{
           //   this.$router.replace("/login")
           // }
+          this.afterLogin(); // 현재 로그인 없음
+
+
+          bluetoothSerial.subscribe('\n', (data)=>{
+              if (data.trim().length){
+                  if (!isNaN(data))
+                      this.$store.commit('setWheelPos', parseInt(data)/10);
+              }
+          });
 
           connect(()=>{
               this.setTodayWheelData();
@@ -62,7 +71,7 @@
       });
     },
     methods: {
-        setTodayWheelData() {
+      setTodayWheelData() {
             db.transaction(tx => {
                 tx.executeSql(
                     "SELECT SUM(move) as today_move, sum(calorie) as today_calorie FROM logs", [],
@@ -83,11 +92,9 @@
       checkDevice: function () {
         const device = this.$store.getters.device
         if (device && device.id) {
-          ble.isConnected(device.id, () => {
-            this.afterConnect(device.id);
+          bluetoothSerial.connect(device.id, () => {
           }, () => {
-            ble.connect(device.id, () => {
-              this.afterConnect(device.id);
+            bluetoothSerial.connect(device.id, () => { // 연결 2회 시도
             }, () => {
               this.$store.commit('setDevice', null);
               this.$router.push("connect-dialog")
@@ -105,48 +112,9 @@
       },
 
       afterLogin(){
-        ble.isEnabled(this.checkDevice, () => {
-          ble.enable(this.checkDevice);
+          bluetoothSerial.isEnabled(this.checkDevice, () => {
+              bluetoothSerial.enable(this.checkDevice);
         });
-      },
-
-      async afterConnect(deviceId) {
-        var buffer = "";
-        // deviceId: 연결한 디바이스 ID
-        ble.startNotification(deviceId, "6E400001-B5A3-F393-E0A9-E50E24DCCA9E", "6E400003-B5A3-F393-E0A9-E50E24DCCA9E", data => {
-          buffer += bytesToString(data);
-          const arr = buffer.split("\n");
-          while (arr.length > 1) {
-            const item = arr.shift();
-            console.log(item);
-            if (item.trim().length){
-              if (!isNaN(item))
-                this.$store.commit('setWheelPos', parseInt(item));
-            }
-          }
-          buffer = arr.join("\n");
-        }, e => console.error(e));
-
-        while (true) {
-          try {
-            await (
-              new Promise((resolve, reject) => {
-                setTimeout(() => {
-                  write(this.$store.getters.device.id, "SUM\n", function (a, b, c) {
-                    console.log("success: ", a);
-                    resolve();
-                  }, function (a, b, c) {
-                    console.log("failure: ", a, b, c);
-                    resolve();
-                  });
-                  setTimeout(() => resolve(), 250);
-                }, this.$store.getters.wheel.reqTerm);
-              })
-            );
-          } catch (e) {
-            continue;
-          }
-        }
       },
 
       onBackKeyDown () {

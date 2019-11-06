@@ -19,21 +19,23 @@
         <v-card-title class="headline">연결할 디바이스를 선택하세요.</v-card-title>
         <div>
 
-          <itemList
-            v-if="$store.getters.device"
-            :device="$store.getters.device"
-            :connected="true"
-            @connect="onDeviceItemConnect"
-            @disconnect="onDeviceItemDisconnect"
-          ></itemList>
-
           <v-list id="deviceList" two-line>
-            <v-divider></v-divider>
-            <template
-              v-for="device in deviceList"
-            >
+            <template v-if="device">
+              <v-divider></v-divider>
               <itemList
                 :device="device"
+                :connected="true"
+                @connect="onDeviceItemConnect"
+                @disconnect="onDeviceItemDisconnect"
+              ></itemList>
+            </template>
+            <v-divider></v-divider>
+            <template
+              v-for="deviceItem in deviceList"
+             >
+              <itemList
+                v-if="!device || device.id != deviceItem.id"
+                :device="deviceItem"
                 :connected="false"
                 @connect="onDeviceItemConnect"
                 @tryConnect="onDeviceItemTryConnect"
@@ -51,6 +53,7 @@
 </template>
 <script>
   import Vue from 'vue';
+  import {mapGetters} from 'vuex'
   import itemList from './itemList.vue';
   export default {
     components: {
@@ -62,6 +65,11 @@
         deviceList: [],
         opened: false
       };
+    },
+    computed: {
+        ...mapGetters([
+            'device',
+        ]),
     },
     methods: {
       onDeviceItemConnect: function (device) {
@@ -94,39 +102,20 @@
       }
     },
     mounted() {
-      this.opened = true
+      this.opened = true;
       this.$store.commit('disableBackButton')
       Vue.cordova.on('deviceready', () => {
-        const self = this;
+          bluetoothSerial.list((list) => {
+              this.deviceList = list;
+          });
 
-        // 스캔 시작
-        ble.startScanWithOptions([], { reportDuplicates: false }, function(device) {
-            /*
-            * device 객체 형식
-            * {
-            *   "name": "TI SensorTag", // 디바이스 이름
-            *   "id": "BD922605-1B07-4D55-8D09-B66653E51BBA", // 디바이스 ID
-            *   "rssi": -79,
-            * }
-            * */
-            if (!device.name) {
-              device.name = device.id;
-            }
-            self.deviceList.push(device);
-        }, function (a,b,c) {
-          console.log(a,b,c);
-        });
-
-        document.addEventListener('backbutton', this.backButton, false)
+          document.addEventListener('backbutton', this.backButton, false)
       })
 
     },
     created() {
 
     },
-    destroyed() {
-      ble.stopScan(() => console.log('stop scanning'), () => console.log('stop scanning'));
-    }
   };
 </script>
 <style lang="scss" scoped>

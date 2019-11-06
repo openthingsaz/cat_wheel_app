@@ -23,18 +23,19 @@
             }
         },
         methods: {
-            connectSuccess: function (device) {
-                this.$emit('connect', device);
+            connectSuccess: function () {
+                this.$emit('connect', this.device);
             },
             click: function () {
                 if (this.connected) {
-                    ble.disconnect(this.device.id);
+                    bluetoothSerial.disconnect();
                     this.$emit('disconnect');
                 }else{
+                    bluetoothSerial.disconnect();
                     this.$emit('tryConnect');
-                    ble.connect(this.device.id, this.connectSuccess, (e) => {
+                    bluetoothSerial.connect(this.device.id, this.connectSuccess, (e) => {
                         console.log(e);
-                      ble.connect(this.device.id, this.connectSuccess, (e) => {
+                        bluetoothSerial.connect(this.device.id, this.connectSuccess, (e) => {
                           console.log(e);
                           this.$emit('connect', null);
                           navigator.notification.alert(e, "연결 실패");
@@ -44,7 +45,7 @@
             }
         },
         mounted() {
-
+          console.log(this.device);
         },
     };
 </script>

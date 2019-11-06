@@ -8,8 +8,9 @@
         <div class="ledBtn">
           <img src="img/ledBtn.png" @click="$router.push('/led-setting')"/>
         </div>
-        <div class="bleBtn item-right" @click="$router.push('/tmp-setting')">
-          <img src="img/bleBtnOff.png"/>
+        <div class="bleBtn item-right" @click="$router.push('/connect-dialog')">
+          <img v-if="device" src="img/bleBtnOn.png"/>
+          <img v-else src="img/bleBtnOff.png"/>
         </div>
       </div>
       <div style="margin-top: -18px; padding: 8px 0; overflow: hidden;">
@@ -73,6 +74,8 @@
 </template>
 <script>
   import Vue from 'vue';
+  import {mapGetters} from 'vuex'
+
   import moment from 'moment';
   import csvStringify from 'csv-stringify-as-promised';
   import catHeader from './home/cat-header.vue';
@@ -89,13 +92,15 @@
     },
     data: function () {
       return {
-        deviceList: [],
       };
     },
     computed: {
       graphHeight(){
         return window.innerHeight;
-      }
+      },
+        ...mapGetters([
+            'device',
+        ]),
     },
     methods: {
       share(){

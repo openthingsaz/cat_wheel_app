@@ -17,7 +17,6 @@
     "colorsys": "^1.0.21",
     "cordova-android": "^7.1.4",
     "cordova-browser": "^5.0.3",
-    "cordova-plugin-ble-central": "^1.2.2",
     "cordova-plugin-bluetooth-serial": "^0.4.7",
     "cordova-plugin-camera": "^4.0.3",
     "cordova-plugin-compat": "^1.2.0",

@@ -163,7 +163,7 @@
             },
             sendCommend(cmd) {
                 if (!this.$store.getters.device) return;
-                write(this.$store.getters.device.id, cmd+"\n", function (a, b, c) {
+                bluetoothSerial.write(this.$store.getters.device.id, cmd+"\n", function (a, b, c) {
                     console.log("success: ", a, b, c);
                 }, function (a, b, c) {
                     console.log("failure: ", a, b, c);

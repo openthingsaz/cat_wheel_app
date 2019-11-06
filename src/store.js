@@ -233,7 +233,7 @@ export default new Vuex.Store({
         let {r,g,b} = hsv_to_rgb(count, 99, 100)
         state.point.random.hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         const cmd = `RGB${(r+"").padStart(3, "0")},${(g+"").padStart(3, "0")},${(b+"").padStart(3, "0")}`;
-        write(cmd+"\n");
+        bluetoothSerial.write(cmd+"\n");
 
         if (count === 360) {
           state.point.random.count = 0;
