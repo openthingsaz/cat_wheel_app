@@ -1,9 +1,8 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 import moment from 'moment'
-import {db} from "./assets/js/db"
+import {connect} from "./assets/js/db"
 import {hsv_to_rgb} from 'colorsys'
-import {write} from "./assets/js/bleUtill"
 Vue.use(Vuex);
 
 export default new Vuex.Store({
@@ -24,6 +23,7 @@ export default new Vuex.Store({
     },
     device: JSON.parse(localStorage.getItem('device')),
     wheel: {
+      insertTimeout: null,
       transaction: false,
       todayMove: 0,
       todayCalorie: 0,
@@ -100,8 +100,8 @@ export default new Vuex.Store({
     },
 
     calorie(state) {
-      const cat = state.cat;
-      if (cat) {
+      if (state.curCatId !== 0) {
+        const cat = state.cats.find(cat => cat.id === state.curCatId);
         return state.wheel.todayCalorie + (state.wheel.move / 360 * 1.1 * Math.PI) * (0.06 + (cat.weight-5)/100)
       } else{
         return 0
@@ -145,6 +145,7 @@ export default new Vuex.Store({
 
     setCatId(state, id) {
       state.curCatId = id;
+      state.wheel.move = 0;
       localStorage.setItem("_curCatId", id)
     },
 
@@ -170,60 +171,94 @@ export default new Vuex.Store({
 
     setWheelPos(state, pos) {
       const now = new Date().getTime()
-      const update = () => {
-        const now = new Date().getTime()
-        let move = Math.abs(state.wheel.position - pos)
-        if (state.wheel.position === pos) {
-          return
-        }
-
-        move = move <= 180 ? move : 360 - move
-        state.wheel.move += move
-        state.wheel.position = pos
-        state.wheel.lastUpdate = now
-
-        if (!state.wheel.firstUpdate) {
-          state.wheel.firstUpdate = now
-        }
-      }
-
-      if (state.wheel.position === null || state.wheel.transaction) {
-        state.wheel.position = pos
+      let move = Math.abs(state.wheel.position - pos)
+      if (state.wheel.position === pos) {
         return
       }
 
-      if (state.curCatId !== 0 && state.wheel.firstUpdate != null && now - state.wheel.lastUpdate > 1500) {
-        // DB Insert
-        const cat = state.cats.find(item => item.id === state.curCatId);
-        state.wheel.transaction = true
-        let calorie = (state.wheel.move / 360 * 1.1 * Math.PI) * (0.06 + (cat.weight-5)/100)
-        db.transaction(tx => {
-          tx.executeSql(
-            'INSERT INTO logs VALUES (?,?,?,?)',
-            [Math.round(state.wheel.firstUpdate/1000), Math.round((state.wheel.lastUpdate-state.wheel.firstUpdate)/1000), state.wheel.move, calorie],
-            () => {
-              state.wheel.firstUpdate = null
-              state.wheel.todayCalorie += calorie
-              state.wheel.todayMove += state.wheel.move
-              state.wheel.move = 0
-              state.wheel.transaction = false
-              update()
-            },
-            err => {
-              console.error(err);
-            }
-          );
-        }, err => {
-          console.error(err);
-        })
-      } else {
-        update()
+      move = move <= 180 ? move : 360 - move
+      state.wheel.move += move
+      state.wheel.position = pos
+      state.wheel.lastUpdate = now
+
+      if (!state.wheel.firstUpdate) {
+        state.wheel.firstUpdate = now
       }
+      // const now = new Date().getTime()
+      // const update = () => {
+      //   const now = new Date().getTime()
+      //   let move = Math.abs(state.wheel.position - pos)
+      //   if (state.wheel.position === pos) {
+      //     return
+      //   }
+      //
+      //   move = move <= 180 ? move : 360 - move
+      //   state.wheel.move += move
+      //   state.wheel.position = pos
+      //   state.wheel.lastUpdate = now
+      //
+      //   if (!state.wheel.firstUpdate) {
+      //     state.wheel.firstUpdate = now
+      //   }
+      // }
+      //
+      // if (state.wheel.position === null || state.wheel.transaction) {
+      //   state.wheel.position = pos
+      //   return
+      // }
+      //
+      // if (state.wheel.insertTimeout) {
+      //   clearTimeout(state.wheel.insertTimeout);
+      //   state.wheel.insertTimeout = null;
+      // }
+      //
+      //
+      // if (state.curCatId !== 0 && state.wheel.firstUpdate != null && now - state.wheel.lastUpdate > 1500) {
+      //   // DB Insert
+      //   const cat = state.cats.find(item => item.id === state.curCatId);
+      //   let calorie = (state.wheel.move / 360 * 1.1 * Math.PI) * (0.06 + (cat.weight-5)/100)
+      //   const insertFn = flag => connect(db => {
+      //     console.log([state.curCatId, Math.round(state.wheel.firstUpdate/1000), Math.round((state.wheel.lastUpdate-state.wheel.firstUpdate)/1000), state.wheel.move, calorie] );
+      //     state.wheel.transaction = true
+      //     db.transaction(tx => {
+      //       tx.executeSql(
+      //         'INSERT INTO logs_v2 VALUES (?,?,?,?,?)',
+      //         [state.curCatId, Math.round(state.wheel.firstUpdate/1000), Math.round((state.wheel.lastUpdate-state.wheel.firstUpdate)/1000), state.wheel.move, calorie],
+      //         () => {
+      //           state.wheel.firstUpdate = null
+      //           state.wheel.todayCalorie += calorie
+      //           state.wheel.todayMove += state.wheel.move
+      //           state.wheel.move = 0
+      //           state.wheel.transaction = false
+      //           update()
+      //         },
+      //         err => {
+      //           console.error(err);
+      //         }
+      //       );
+      //     }, err => {
+      //       console.error(err);
+      //     })
+      //   });
+      //
+      // } else {
+      //   update()
+      // }
     },
 
-    setTodayWheelData(state, calorie, move) {
-      state.wheel.todayCalorie = calorie;
-      state.wheel.todayMove = move;
+    insertEnd(state) {
+      const cat = state.cats.find(cat => cat.id === state.curCatId);
+      state.wheel.firstUpdate = null
+      state.wheel.lastUpdate = null
+      state.wheel.todayCalorie += (state.wheel.move / 360 * 1.1 * Math.PI) * (0.06 + (cat.weight-5)/100);
+      state.wheel.todayMove += state.wheel.move
+      state.wheel.move = 0
+    },
+
+    setTodayWheelData(state, data) {
+      state.wheel.todayCalorie = data[0];
+      state.wheel.todayMove = data[1];
+      state.wheel.move = 0;
     },
 
     startRandomColor(state){

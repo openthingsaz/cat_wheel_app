@@ -15,11 +15,11 @@
 
     <div id="subheader">
       <div>
-        Distance
+        Burn
       </div>
     </div>
 
-    <div class="Distance">
+    <div class="body">
      ss
 
     </div>

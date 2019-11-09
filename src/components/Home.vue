@@ -25,8 +25,8 @@
           Distance
         </div>
         <div>
-          <div></div>
-          ## <span>km</span>
+          <div>{{wheelMoveDistance}}</div>
+           <span>{{wheelMoveDistanceUnit}}</span>
         </div>
       </div>
 
@@ -36,8 +36,7 @@
           Wheel turn
         </div>
         <div>
-          <div></div>
-          ##
+          <div>{{wheelCount}}</div>
         </div>
       </div>
 
@@ -47,8 +46,8 @@
           Burn
         </div>
         <div>
-          <div></div>
-          ## <span>kcal</span>
+          <div>{{calorie}}</div>
+          <span>kcal</span>
         </div>
       </div>
     </div>
@@ -76,13 +75,10 @@
   import Vue from 'vue';
   import {mapGetters} from 'vuex'
 
-  import moment from 'moment';
-  import csvStringify from 'csv-stringify-as-promised';
   import catHeader from './home/cat-header.vue';
   import circlePointer from './home/circlePointer.vue';
   import itemList from './home/itemList.vue';
-  import {db} from "../assets/js/db"
-  import {write} from "../assets/js/bleUtill"
+  import {connect} from "../assets/js/db"
 
   export default {
     components: {
@@ -91,15 +87,38 @@
       'cat-header': catHeader
     },
     data: function () {
+
       return {
       };
     },
     computed: {
-      graphHeight(){
-        return window.innerHeight;
-      },
+        graphHeight(){
+          return window.innerHeight;
+        },
+        wheelMoveDistance() {
+            const distance = this.$store.getters.wheelMoveDistance;
+            if (distance < 1000) {
+                return Math.round(distance);
+            } else if (distance < 10000){
+                return (distance/1000).toFixed(2);
+            } else {
+                return (distance/1000).toFixed(1);
+            }
+        },
+        wheelMoveDistanceUnit() {
+            return this.$store.getters.wheelMoveDistance < 1000 ? 'm' : 'km';
+        },
+        calorie() {
+            const calorie = this.$store.getters.calorie;
+            if (calorie < 100) {
+                return calorie.toFixed(2);
+            } else {
+                return calorie.toFixed(1);
+            }
+        },
         ...mapGetters([
             'device',
+            'wheelCount'
         ]),
     },
     methods: {
@@ -157,6 +176,33 @@
       }
     },
     mounted() {
+        connect(db => {
+            db.transaction(tx => {
+                const catId = this.$store.getters.curCatId;
+                console.log(catId );
+                if (catId !== 0) {
+                    tx.executeSql(
+                        "SELECT SUM(move) as today_move, sum(calorie) as today_calorie FROM logs_v2 WHERE cat = ?", [catId],
+                        (tx, res) => {
+                            console.log(res.rows);
+                            if (res.rows.length) {
+                                let item = res.rows.item(0);
+                                this.$store.commit('setTodayWheelData',[item['today_calorie'],item['today_move']])
+                            }
+                        },
+                        err => {
+                            console.error(err);
+                        }
+                    )
+                } else {
+                    this.$store.commit('setTodayWheelData', [0, 0]);
+                }
+
+            }, err => {
+                console.error(err);
+            })
+        })
+
     },
     created() {
 
@@ -235,15 +281,30 @@
 
   &>div:last-child {
     flex:1 0 0;
-    display: flex;
     color: #ffffff;
-    align-items: center;
+    text-align: center;
     margin-top: 4px;
     padding: 0 4px;
 
-    &>div {
+    &::before {
+      content: '';
+      display: block;
+      margin: 0 auto 12px auto;
+      width: 20%;
       background-color: #626C77;
       height: 2px;
+    }
+
+    font-size: 0;
+    div {
+      display: inline;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    span {
+      font-size: 12px;
+      margin-left: 2px;
     }
   }
 }

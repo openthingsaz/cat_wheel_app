@@ -41,13 +41,13 @@ const router = new Router({
     {
       path: '/chart/turn',
       name: 'Chart turn',
-      components: {page: require('./components/chart/distance.vue').default}
+      components: {page: require('./components/chart/turn.vue').default}
     },
 
     {
       path: '/chart/burn',
       name: 'Chart burn',
-      components: {page: require('./components/chart/distance.vue').default}
+      components: {page: require('./components/chart/burn.vue').default}
     },
 
     {

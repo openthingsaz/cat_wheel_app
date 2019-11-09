@@ -6,15 +6,6 @@
       v-model="opened"
       @input="close"
     >
-      <div id="progress" v-show="connecting">
-        <v-progress-circular
-          :size="50"
-          color="primary"
-          indeterminate
-        ></v-progress-circular>
-      </div>
-
-
       <v-card>
         <v-card-title class="headline">연결할 디바이스를 선택하세요.</v-card-title>
         <div>
@@ -38,7 +29,6 @@
                 :device="deviceItem"
                 :connected="false"
                 @connect="onDeviceItemConnect"
-                @tryConnect="onDeviceItemTryConnect"
               ></itemList>
 
               <v-divider></v-divider>
@@ -76,16 +66,12 @@
         this.connecting = false;
         if (device) {
           this.$store.commit('setDevice', device);
+          this.$emit('select', true);
         }
         this.close()
       },
 
       onDeviceItemDisconnect: function () {
-        this.$store.commit('setDevice', null);
-      },
-
-      onDeviceItemTryConnect: function () {
-        this.connecting = true
         this.$store.commit('setDevice', null);
       },
       close(){

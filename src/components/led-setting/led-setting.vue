@@ -133,13 +133,27 @@
                     return;
                 } else if (idx === 4) {
                   color = "#000000";
+                } else if (idx < 4) {
+                    color = ["#ffffff", "#1EAA39", "#E50012", "#036EB7",][idx]
                 } else {
-                    if (this.colorInfo.colorPos === 5 && this.colorInfo.color0 === null) {
-                        color = this.colorInfo.color0 = this.pickerColor;
-                    } else if (this.colorInfo.colorPos === 6 && this.colorInfo.color1 === null) {
-                        color = this.colorInfo.color1 = this.pickerColor;
-                    } else if (this.colorInfo.colorPos === 7 && this.colorInfo.color2 === null) {
-                        color = this.colorInfo.color2 = this.pickerColor;
+                    if (this.colorInfo.colorPos === 5) {
+                        if (this.colorInfo.color0 === null) {
+                          color = this.colorInfo.color0 = this.pickerColor;
+                        } else {
+                          color = this.colorInfo.color0;
+                        }
+                    } else if (this.colorInfo.colorPos === 6) {
+                        if (this.colorInfo.color1 === null) {
+                          color = this.colorInfo.color1 = this.pickerColor;
+                        } else {
+                          color = this.colorInfo.color1;
+                        }
+                    } else if (this.colorInfo.colorPos === 7) {
+                        if (this.colorInfo.color2 === null) {
+                          color = this.colorInfo.color2 = this.pickerColor;
+                        } else {
+                          color = this.colorInfo.color2;
+                        }
                     }
                 }
                 this.save(color);
@@ -163,7 +177,7 @@
             },
             sendCommend(cmd) {
                 if (!this.$store.getters.device) return;
-                bluetoothSerial.write(this.$store.getters.device.id, cmd+"\n", function (a, b, c) {
+                bluetoothSerial.write(cmd+"\n", function (a, b, c) {
                     console.log("success: ", a, b, c);
                 }, function (a, b, c) {
                     console.log("failure: ", a, b, c);

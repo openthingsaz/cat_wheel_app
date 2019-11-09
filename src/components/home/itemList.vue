@@ -31,16 +31,7 @@
                     bluetoothSerial.disconnect();
                     this.$emit('disconnect');
                 }else{
-                    bluetoothSerial.disconnect();
-                    this.$emit('tryConnect');
-                    bluetoothSerial.connect(this.device.id, this.connectSuccess, (e) => {
-                        console.log(e);
-                        bluetoothSerial.connect(this.device.id, this.connectSuccess, (e) => {
-                          console.log(e);
-                          this.$emit('connect', null);
-                          navigator.notification.alert(e, "연결 실패");
-                        })
-                    })
+                    this.$emit('connect', this.device);
                 }
             }
         },
